@@ -2,7 +2,9 @@
 #include <string>
 #include <sstream>
 #include <fstream>
-#include <map>
+#include <list>
+
+#include "Utils.h"
 
 #include "llvm/Support/CommandLine.h"
 #include "clang/Tooling/CommonOptionsParser.h"
@@ -40,25 +42,37 @@ static llvm::cl::opt<std::string> matchLines(
 int main(int argc, const char** argv){
     clang::tooling::CommonOptionsParser optionsParser(argc, argv, ToolCategory);
 
-    std::cout << "Kernel files:\n";
+    // Set of kernel files
+    std::list<std::string> kernels;
+    // Expected output file
+    std::string expectedOutputFilePath;
+    // Executable file
+    std::string executableFilePath;
+    // Lines in the expected output file to match
+    std::list<int> lines;
+
+    std::string kernelFileName;
     for (auto it = optionsParser.getSourcePathList().begin(); it!=optionsParser.getSourcePathList().end();it++){
-        std::string kernelFileName(it->c_str());
-        std::cout << kernelFileName << std::endl;
+        kernelFileName = it->c_str();
+        kernels.push_back(kernelFileName);
     }
 
-    std::cout << "Expected output: " << expectedOutput.c_str() << "\n";
-    std::cout << "Executable: " << executableFile.c_str() << "\n";
+    expectedOutputFilePath = expectedOutput.c_str();
+    int totalLines = ClmtUtils::getNumLines(expectedOutputFilePath);
+
+    executableFilePath = executableFile.c_str();
 
     if (completeMatch && !matchLines.empty()){
-        std::cout << "The matching mode can either be all or part match\n";
+        std::cout << "The matching mode should either be all (-all) or part match (specify lines in the format of \"3:5,7,-1\")\n";
         exit(-1);
     } 
 
     if (!matchLines.empty()){
-        std::cout << "Complete matching disabled\n";
-        std::cout << matchLines.c_str() << "\n";
+        lines = ClmtUtils::retrieveNumbers(matchLines.c_str(), totalLines);
     } else {
-        std::cout << "Complete matching enabled\n";
+        for (int i = 1; i <= totalLines; ++i){
+            lines.push_back(i);
+        }
     }
 
 }
