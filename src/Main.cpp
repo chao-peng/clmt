@@ -5,6 +5,7 @@
 #include <list>
 
 #include "Utils.h"
+#include "Constants.h"
 
 #include "llvm/Support/CommandLine.h"
 #include "clang/Tooling/CommonOptionsParser.h"
@@ -57,6 +58,11 @@ int main(int argc, const char** argv){
         kernels.push_back(kernelFileName);
     }
 
+    if (kernels.size() == 0){
+        std::cout << "Please provide at least one GPU kernel source code to process.\n";
+        exit(error_code::KERNEL_FILE_NOT_PROVIDED);
+    }
+
     expectedOutputFilePath = expectedOutput.c_str();
     int totalLines = ClmtUtils::getNumLines(expectedOutputFilePath);
 
@@ -64,7 +70,7 @@ int main(int argc, const char** argv){
 
     if (completeMatch && !matchLines.empty()){
         std::cout << "The matching mode should either be all (-all) or part match (specify lines in the format of \"3:5,7,-1\")\n";
-        exit(-1);
+        exit(error_code::LINES_TO_COMPARE_NOT_VALID);
     } 
 
     if (!matchLines.empty()){
@@ -74,5 +80,28 @@ int main(int argc, const char** argv){
             lines.push_back(i);
         }
     }
+
+    int currentKernel = 0;
+    for (auto itKernel = kernels.begin(); itKernel != kernels.end(); itKernel++){
+        std::cout << "Processing kernel file " << *itKernel << " [" << currentKernel+1 << "/" << kernels.size() << "]" << std::endl;
+        //TODO: implement kernel processing.
+        //TODO: Print how many mutants generated.
+        // e.g. 
+        // 10 mutants generated for kernel1
+        // 20 mutants generated for kernel2
+        ++currentKernel;
+    }
+
+    std::cout << "Executing " << executableFilePath << std::endl;
+    //TODO: Iterate every mutant and compare result
+    // e.g.
+    // Executing with mutant 1
+    // killed / survived
+
+    //TODO: Summary
+    // e.g.
+    // X mutants survived
+    // Y mutants killed
+    std::cout << "[Result]" << std::endl; 
 
 }
