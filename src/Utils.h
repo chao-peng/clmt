@@ -11,6 +11,8 @@ public:
     static void makeNumberValid(int& number, int low, int high, bool inclusive);
     static std::list<int> retrieveNumbers(std::string inputString, int totalNumber);
     static int getNumLines(std::string fileName);
+    static bool isMutable(const std::string& operatorStr);
+    static std::string getMutationOperator(const std::string& operatorStr);
 };
 
 #endif

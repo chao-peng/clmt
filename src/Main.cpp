@@ -6,9 +6,11 @@
 
 #include "Utils.h"
 #include "Constants.h"
+#include "OpenCLKernelInvastigator.h"
 
 #include "llvm/Support/CommandLine.h"
 #include "clang/Tooling/CommonOptionsParser.h"
+#include "clang/Tooling/Tooling.h"
 
 static llvm::cl::OptionCategory ToolCategory("OpenCL kernel branch coverage checker options");
 
@@ -82,8 +84,12 @@ int main(int argc, const char** argv){
     }
 
     int currentKernel = 0;
+    clang::tooling::ClangTool tool(optionsParser.getCompilations(), optionsParser.getSourcePathList());
+    int status = parseCode(&tool);
+    /*
     for (auto itKernel = kernels.begin(); itKernel != kernels.end(); itKernel++){
         std::cout << "Processing kernel file " << *itKernel << " [" << currentKernel+1 << "/" << kernels.size() << "]" << std::endl;
+  
         //TODO: implement kernel processing.
         //TODO: Print how many mutants generated.
         // e.g. 
@@ -91,7 +97,7 @@ int main(int argc, const char** argv){
         // 20 mutants generated for kernel2
         ++currentKernel;
     }
-
+*/
     std::cout << "Executing " << executableFilePath << std::endl;
     //TODO: Iterate every mutant and compare result
     // e.g.
