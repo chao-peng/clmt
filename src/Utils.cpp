@@ -6,6 +6,7 @@
 #include <set>
 #include <map>
 #include <string>
+#include <sstream>
 #include <fstream>
 #include <algorithm>
 #include <cctype>
@@ -117,6 +118,102 @@ int ClmtUtils::getNumLines(std::string fileName){
     return i;
 }
 
-std::string ClmtUtils::getMutationOperator(const std::string& operatorStr){
+bool ClmtUtils::hasQuality(const unsigned int& quality, const unsigned int& qualityIdentifier){
+    return ((quality & qualityIdentifier) == qualityIdentifier)? true: false;
+}
 
+void ClmtUtils::initialiseOperatorTypeMap(std::map<std::string, unsigned int>& operatorTypeMap){
+    operatorTypeMap["+B"]  = operator_type::ARITHMETIC;
+    operatorTypeMap["-B"]  = operator_type::ARITHMETIC;
+    operatorTypeMap["-U"]  = operator_type::ARITHMETIC;
+    operatorTypeMap["*B"]   = operator_type::ARITHMETIC;
+    operatorTypeMap["/B"]   = operator_type::ARITHMETIC;
+    operatorTypeMap["%B"]   = operator_type::ARITHMETIC;
+    operatorTypeMap["++U"]  = operator_type::ARITHMETIC;
+    operatorTypeMap["--U"]  = operator_type::ARITHMETIC;
+    operatorTypeMap["==B"]  = operator_type::RELATIONAL;
+    operatorTypeMap["!=B"]  = operator_type::RELATIONAL;
+    operatorTypeMap["<B"]   = operator_type::RELATIONAL;
+    operatorTypeMap["<=B"]  = operator_type::RELATIONAL;
+    operatorTypeMap[">B"]   = operator_type::RELATIONAL;
+    operatorTypeMap[">=B"]  = operator_type::RELATIONAL;
+    operatorTypeMap["&&B"]  = operator_type::LOGICAL;
+    operatorTypeMap["||B"]  = operator_type::LOGICAL;
+    operatorTypeMap["!U"]   = operator_type::LOGICAL;
+    operatorTypeMap["&B"]   = operator_type::BITWISE;
+    operatorTypeMap["|B"]   = operator_type::BITWISE;
+    operatorTypeMap["^B"]   = operator_type::BITWISE;
+    operatorTypeMap["~U"]   = operator_type::BITWISE;
+    operatorTypeMap["<<B"]  = operator_type::BITWISE;
+    operatorTypeMap[">>B"]  = operator_type::BITWISE;
+    operatorTypeMap["=B"]   = operator_type::ASSIGNMENT;
+    operatorTypeMap["+=B"]  = operator_type::ASSIGNMENT;
+    operatorTypeMap["-=B"]  = operator_type::ASSIGNMENT;
+    operatorTypeMap["*=B"]  = operator_type::ASSIGNMENT;
+    operatorTypeMap["/=B"]  = operator_type::ASSIGNMENT;
+    operatorTypeMap["%=B"]  = operator_type::ASSIGNMENT;
+    operatorTypeMap["<<=B"] = operator_type::ASSIGNMENT;
+    operatorTypeMap[">>=B"] = operator_type::ASSIGNMENT;
+    operatorTypeMap["&=B"]  = operator_type::ASSIGNMENT;
+    operatorTypeMap["|=B"]  = operator_type::ASSIGNMENT;
+    operatorTypeMap["^=B"]  = operator_type::ASSIGNMENT;
+    operatorTypeMap["&U"]   = operator_type::OTHER;
+    operatorTypeMap["*U"]   = operator_type::OTHER;
+}
+
+void ClmtUtils::initialiseMutantOperatorMap(std::map<std::string, std::list<std::string>>& mutantOperatorMap){
+    //Arithmetic
+    mutantOperatorMap["+B"] = {"-"};
+    mutantOperatorMap["-B"] = {"+"};
+    mutantOperatorMap["-U"] = {""};
+    mutantOperatorMap["*B"] = {"/"};
+    mutantOperatorMap["/B"] = {"*"};
+    mutantOperatorMap["%B"] = {"*"};
+    mutantOperatorMap["++U"] = {"--"};
+    mutantOperatorMap["--U"] = {"++"};
+    //Relational
+    mutantOperatorMap["<B"] = {">", ">="};
+    mutantOperatorMap[">B"] = {"<", "<="};
+    mutantOperatorMap["==B"] = {"!="};
+    mutantOperatorMap["<=B"] = {">=", ">"};
+    mutantOperatorMap[">=B"] = {"<=", "<"};
+    mutantOperatorMap["!=B"] = {"=="};
+    //Logical
+    mutantOperatorMap["&&B"] = {"||"};
+    mutantOperatorMap["||B"] = {"&&"};
+    mutantOperatorMap["!U"] = {""};
+    //Bitwise
+    mutantOperatorMap["&B"] = {"|"};
+    mutantOperatorMap["|B"] = {"&"};
+    mutantOperatorMap["^B"] = {"&"};
+    mutantOperatorMap["~U"] = {""};
+    mutantOperatorMap["<<"] = {">>"};
+    mutantOperatorMap[">>"] = {"<<"};
+    //Assignment
+    mutantOperatorMap["+=B"] = {"-="};
+    mutantOperatorMap["-=B"] = {"+="};
+    mutantOperatorMap["*=B"] = {"/="};
+    mutantOperatorMap["/=B"] = {"*="};
+    mutantOperatorMap["%=B"] = {"*="};
+    mutantOperatorMap["<<=B"] = {">>="};
+    mutantOperatorMap[">>=B"] = {"<<="};
+    mutantOperatorMap["&=B"] = {"|="};
+    mutantOperatorMap["|=B"] = {"&="};
+    mutantOperatorMap["^=B"] = {"&="};
+}
+
+std::string ClmtUtils::colorString(const std::string& str, const char* const color){
+    return color + str + output_color::KNRM;
+}
+
+void ClmtUtils::generateMutant(const std::string& kernelFilename, const int& numMutableOperators){
+    std::ifstream kernelFile(kernelFilename);
+    std::stringstream codeStream;
+    std::string code;
+    codeStream << kernelFile.rdbuf();
+    code = codeStream.str();
+    int i = numMutableOperators;
+    while (i--){
+        
+    }
 }

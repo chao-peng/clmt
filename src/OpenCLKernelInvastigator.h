@@ -4,6 +4,6 @@
 #include "clang/Tooling/Tooling.h"
 #include "UserConfig.h"
 
-int parseCode(clang::tooling::ClangTool* tool);
+int parseCode(clang::tooling::ClangTool* tool, const int& numKernelsIn);
 
 #endif

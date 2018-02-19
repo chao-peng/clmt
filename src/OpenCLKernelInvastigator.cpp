@@ -30,25 +30,78 @@ std::map<std::string, std::string> templateMap;
 std::map<std::string, unsigned int> operatorType;
 std::map<std::string, std::list<std::string>> mutantOperator;
 
+int currentOperator;
+int numOperators;
+int currentKernel;
+int numKernels;
+std::string currentFile;
+
 class RecursiveASTVisitorForKerlInvastigator : public RecursiveASTVisitor<RecursiveASTVisitorForKerlInvastigator>{
 public:
     explicit RecursiveASTVisitorForKerlInvastigator(Rewriter &r) : myRewriter(r) {}
     
     bool VisitStmt(Stmt *s){
-        // If
         if (isa<BinaryOperator>(s)){
             BinaryOperator* binaryOperator = cast<BinaryOperator>(s);
-            std::string operatorStr = binaryOperator->getOpcodeStr().str();
-            if (ClmtUtils::isMutable(operatorStr)){
-                myRewriter.ReplaceText(binaryOperator->getOperatorLoc(),"${operator}");
+            if (notRewritable(myRewriter.getSourceMgr(), binaryOperator->getOperatorLoc())) return true;
+            std::string operatorStr = binaryOperator->getOpcodeStr().str() + "B";
+            if (isMutable(operatorStr)){
+                /*
+                SourceLocation startLoc = myRewriter.getSourceMgr().getFileLoc(
+                    binaryOperator->getLocStart());
+                SourceLocation endLoc = myRewriter.getSourceMgr().getFileLoc(
+                    binaryOperator->getLocEnd());
+                SourceRange newRange;
+                newRange.setBegin(startLoc);
+                newRange.setEnd(endLoc);
+
+                std::cout << "[debug]" << myRewriter.getRewrittenText(newRange) << std::endl;
+                */
+
+                std::stringstream operatorTemplate;
+                operatorTemplate << "${operator_" << currentOperator << "_" << operatorStr << "}";
+                myRewriter.ReplaceText(binaryOperator->getOperatorLoc(), operatorTemplate.str());
+                currentOperator++;
+                numOperators++;
             }
-            std::string debug = myRewriter.getRewrittenText(binaryOperator->getSourceRange());
-            std::cout << operatorStr << " " << debug << std::endl;
         } else if (isa<UnaryOperator>(s)){
             UnaryOperator* unaryOperator = cast<UnaryOperator>(s);
-            std::string debug = myRewriter.getRewrittenText(unaryOperator->getSourceRange());
-            std::cout << debug << std::endl;
+            if (notRewritable(myRewriter.getSourceMgr(), unaryOperator->getOperatorLoc())) return true;
+            std::string operatorStr = unaryOperator->getOpcodeStr(unaryOperator->getOpcode()).str() + "U";
+                        std::cout << "[operatorStr]" << operatorStr << std::endl;
+            if (isMutable(operatorStr)){
+                /*
+                SourceLocation startLoc = myRewriter.getSourceMgr().getFileLoc(
+                    unaryOperator->getLocStart());
+                SourceLocation endLoc = myRewriter.getSourceMgr().getFileLoc(
+                    unaryOperator->getLocEnd());
+                SourceRange newRange;
+                newRange.setBegin(startLoc);
+                newRange.setEnd(endLoc);
+
+                std::cout << "[debug]" << myRewriter.getRewrittenText(newRange) << std::endl;
+                */
+
+                std::stringstream operatorTemplate;
+                operatorTemplate << "${operator_" << currentOperator << "_" << operatorStr << "}";
+                myRewriter.ReplaceText(unaryOperator->getOperatorLoc(), operatorTemplate.str());
+                currentOperator++;
+                numOperators++;
+            }
         }
+        //TODO: instrument barriers 
+        /*else if (isa<CallExpr>(s)){
+            CallExpr *functionCall = cast<CallExpr>(s);
+            SourceLocation startLoc = myRewriter.getSourceMgr().getFileLoc(
+                    functionCall->getCallee()->getLocStart());
+            SourceLocation endLoc = myRewriter.getSourceMgr().getFileLoc(
+                    functionCall->getCallee()->getLocEnd());
+            SourceRange newRange;
+            newRange.setBegin(startLoc);
+            newRange.setEnd(endLoc);
+            std::string functionName = myRewriter.getRewrittenText(newRange);
+            std::cout << "[debug]" << functionName << "\n";
+        }*/
         return true;
     }
 private:
@@ -63,15 +116,15 @@ private:
     }
 
     bool isMutable(const std::string& operatorStr){
-        if (getOperatorType(operatorStr) & operator_type::MUTABLE == operator_type::MUTABLE){
-            return true;
-        } else {
-            return false;
-        }
+        return (mutantOperator.find(operatorStr) == mutantOperator.end())? false: true;
     }
 
-    bool getMutantOperator(const std::string& operatorStr, std::stirng& newOperatorStr){
-        
+    bool notRewritable(const SourceManager& sm, const SourceLocation& sl){
+        if (sm.isInExternCSystemHeader(sl)) return true;
+        if (sm.isInSystemHeader(sl)) return true;
+        if (sm.isMacroBodyExpansion(sl)) return true;
+        if (sm.isMacroArgExpansion(sl)) return true;
+        return false;
     }
 };
 
@@ -110,13 +163,23 @@ public:
             source.append(line);
             source.append("\n");
         }
-
-        std::cout << source << std::endl;
-
+        
+        std::string filename = currentFile + "." + kernel_rewriter_constants::CODE_TEMPLATE_FILENAME_SUFFIX;
+        std::ofstream outputFileStream(filename);
+        outputFileStream << source;
+        outputFileStream.close();
+        UserConfig::removeFakeHeader(filename);
+        ClmtUtils::generateMutant(filename, currentOperator - 1);
+        currentOperator = 1;
+        currentKernel++;
     }
 
     virtual std::unique_ptr<ASTConsumer> CreateASTConsumer(CompilerInstance &ci, 
         StringRef file) override {
+            std::stringstream notification;
+            notification << "[" << currentKernel << "/" << numKernels << "] Instrumenting " << file.str();
+            currentFile = file.str();
+            std::cout << ClmtUtils::colorString(notification.str(), output_color::KBLU) << "\n";
             myRewriter.setSourceMgr(ci.getSourceManager(), ci.getLangOpts());
             return llvm::make_unique<ASTConsumerForKernelInvastigator>(myRewriter);
         }
@@ -125,75 +188,16 @@ private:
     Rewriter myRewriter;
 };
 
-void initialiseMaps(){
-    operatorType["+"] = operator_type::ARITHMETIC | operator_type::BINARY | operator_type::MUTABLE;
-    operatorType["-"] = operator_type::ARITHMETIC | operator_type::BINARY | operator_type::UNARY | operator_type::MUTABLE;
-    operatorType["*"] = operator_type::ARITHMETIC | operator_type::BINARY | operator_type::MUTABLE;
-    operatorType["/"] = operator_type::ARITHMETIC | operator_type::BINARY | operator_type::MUTABLE;
-    operatorType["%"] = operator_type::ARITHMETIC | operator_type::BINARY | operator_type::MUTABLE;
-    operatorType["++"] = operator_type::ARITHMETIC | operator_type::UNARY | operator_type::MUTABLE;
-    operatorType["--"] = operator_type::ARITHMETIC | operator_type::UNARY | operator_type::MUTABLE;
-    operatorType["=="] = operator_type::RELATIONAL | operator_type::BINARY | operator_type::MUTABLE;
-    operatorType["!="] = operator_type::RELATIONAL | operator_type::BINARY | operator_type::MUTABLE;
-    operatorType["<"] = operator_type::RELATIONAL | operator_type::BINARY | operator_type::MUTABLE;
-    operatorType["<="] = operator_type::RELATIONAL | operator_type::BINARY | operator_type::MUTABLE;
-    operatorType[">"] = operator_type::RELATIONAL | operator_type::BINARY | operator_type::MUTABLE;
-    operatorType[">="] = operator_type::RELATIONAL | operator_type::BINARY | operator_type::MUTABLE;
-    operatorType["&&"] = operator_type::LOGICAL | operator_type::BINARY | operator_type::MUTABLE;
-    operatorType["||"] = operator_type::LOGICAL | operator_type::BINARY | operator_type::MUTABLE;
-    operatorType["!"] = operator_type::LOGICAL | operator_type::UNARY;
-    operatorType["&"] = operator_type::BITWISE | operator_type::BINARY | operator_type::MUTABLE;
-    operatorType["|"] = operator_type::BITWISE | operator_type::BINARY | operator_type::MUTABLE;
-    operatorType["^"] = operator_type::BITWISE | operator_type::BINARY | operator_type::MUTABLE;
-    operatorType["~"] = operator_type::BITWISE | operator_type::UNARY;
-    operatorType["<<"] = operator_type::BITWISE | operator_type::BINARY | operator_type::MUTABLE;
-    operatorType[">>"] = operator_type::BITWISE | operator_type::BINARY | operator_type::MUTABLE;
-    operatorType["="] = operator_type::ASSIGNMENT | operator_type::BINARY;
-    operatorType["+="] = operator_type::ASSIGNMENT | operator_type::BINARY | operator_type::MUTABLE;
-    operatorType["-="] = operator_type::ASSIGNMENT | operator_type::BINARY | operator_type::MUTABLE;
-    operatorType["*="] = operator_type::ASSIGNMENT | operator_type::BINARY | operator_type::MUTABLE;
-    operatorType["/="] = operator_type::ASSIGNMENT | operator_type::BINARY | operator_type::MUTABLE;
-    operatorType["%="] = operator_type::ASSIGNMENT | operator_type::BINARY | operator_type::MUTABLE;
-    operatorType["<<="] = operator_type::ASSIGNMENT | operator_type::BINARY | operator_type::MUTABLE;
-    operatorType[">>="] = operator_type::ASSIGNMENT | operator_type::BINARY | operator_type::MUTABLE;
-    operatorType["&="] = operator_type::ASSIGNMENT | operator_type::BINARY | operator_type::MUTABLE;
-    operatorType["|="] = operator_type::ASSIGNMENT | operator_type::BINARY | operator_type::MUTABLE;
-    operatorType["^="] = operator_type::ASSIGNMENT | operator_type::BINARY | operator_type::MUTABLE;
-
-    mutantOperator["+"] = {"-"};
-    mutantOperator["-"] = {"+"};
-    mutantOperator["*"] = {"/"};
-    mutantOperator["/"] = {"*"};
-    mutantOperator["%"] = {"*"};
-    mutantOperator["<"] = {">", ">="};
-    mutantOperator[">"] = {"<", "<="};
-    mutantOperator["=="] = {"!="};
-    mutantOperator["<="] = {">=", ">"};
-    mutantOperator[">="] = {"<=", "<"};
-    mutantOperator["!="] = {"=="};
-    mutantOperator["&"] = {"|"};
-    mutantOperator["|"] = {"&"};
-    mutantOperator["^"] = {"&"};
-    mutantOperator["<<"] = {">>"};
-    mutantOperator["++"] = {"--"};
-    mutantOperator[""] = {""};
-    mutantOperator[""] = {""};
-    mutantOperator[""] = {""};
-    mutantOperator[""] = {""};
-    mutantOperator[""] = {""};
-    mutantOperator[""] = {""};
-    mutantOperator[""] = {""};
-    mutantOperator[""] = {""};
-    mutantOperator[""] = {""};
-    mutantOperator[""] = {""};
-    mutantOperator[""] = {""};
-
-}
-
-int parseCode(clang::tooling::ClangTool* tool){
+int parseCode(clang::tooling::ClangTool* tool, const int& numKernelsIn){
     codeTemplate = "";
     templateMap.clear();
+    ClmtUtils::initialiseOperatorTypeMap(operatorType);
+    ClmtUtils::initialiseMutantOperatorMap(mutantOperator);
+    currentOperator = 1;
+    numKernels = numKernelsIn;
+    currentKernel = 1;
+    numOperators=0;
 
     tool->run(newFrontendActionFactory<ASTFrontendActionForKernelInvastigator>().get());
-    return error_code::STATUS_OK;
+    return numOperators;
 }

@@ -3,6 +3,7 @@
 
 namespace kernel_rewriter_constants{
     const char* const FAKE_HEADER_MACRO = "OPENCLBC_FAKE_HEADER_FOR_LIBTOOLING_";
+    const char* const CODE_TEMPLATE_FILENAME_SUFFIX = "clmt_template";
 }
 
 namespace error_code{
@@ -23,15 +24,24 @@ namespace barrier_type{
 }
 
 namespace operator_type{
-    const unsigned int UNARY = 0x0001;
-    const unsigned int BINARY = 0x0002;
+    const unsigned int RESERVED_KEY0 = 0x0001;
+    const unsigned int RESERVED_KEY1 = 0x0002;
     const unsigned int ARITHMETIC = 0x0004;
     const unsigned int RELATIONAL = 0x0008;
     const unsigned int LOGICAL = 0x0010;
     const unsigned int BITWISE = 0x0020;
     const unsigned int ASSIGNMENT = 0x0040;
     const unsigned int OTHER = 0x0080;
-    const unsigned int MUTABLE = 0x0100;
 }
 
+namespace output_color{
+    const char* const KNRM = "\x1B[0m";
+    const char* const KRED = "\x1B[31m";
+    const char* const KGRN = "\x1B[32m";
+    const char* const KYEL = "\x1B[33m";
+    const char* const KBLU = "\x1B[34m";
+    const char* const KMAG = "\x1B[35m";
+    const char* const KCYN = "\x1B[36m";
+    const char* const KWHT = "\x1B[37m";
+}
 #endif

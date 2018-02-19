@@ -42,6 +42,13 @@ static llvm::cl::opt<std::string> matchLines(
     llvm::cl::Optional
 );
 
+static llvm::cl::opt<std::string> userConfigFileName(
+    "config",
+    llvm::cl::desc("Specify the user config file name"),
+    llvm::cl::value_desc("filename"),
+    llvm::cl::Optional // Will be empty string if not specified
+);
+
 int main(int argc, const char** argv){
     clang::tooling::CommonOptionsParser optionsParser(argc, argv, ToolCategory);
 
@@ -55,13 +62,16 @@ int main(int argc, const char** argv){
     std::list<int> lines;
 
     std::string kernelFileName;
+    std::stringstream notification;
     for (auto it = optionsParser.getSourcePathList().begin(); it!=optionsParser.getSourcePathList().end();it++){
         kernelFileName = it->c_str();
         kernels.push_back(kernelFileName);
     }
 
-    if (kernels.size() == 0){
-        std::cout << "Please provide at least one GPU kernel source code to process.\n";
+    int numKernels = kernels.size();
+    if (numKernels == 0){
+        notification << "Please provide at least one GPU kernel source code to process.";
+        std::cout << ClmtUtils::colorString(notification.str(), output_color::KRED) << "\n";
         exit(error_code::KERNEL_FILE_NOT_PROVIDED);
     }
 
@@ -71,7 +81,8 @@ int main(int argc, const char** argv){
     executableFilePath = executableFile.c_str();
 
     if (completeMatch && !matchLines.empty()){
-        std::cout << "The matching mode should either be all (-all) or part match (specify lines in the format of \"3:5,7,-1\")\n";
+        notification << "The matching mode should either be all (-all) or part match (specify lines in the format of \"3:5,7,-1\")";
+        std::cout << ClmtUtils::colorString(notification.str(), output_color::KRED) << "\n";
         exit(error_code::LINES_TO_COMPARE_NOT_VALID);
     } 
 
@@ -83,22 +94,23 @@ int main(int argc, const char** argv){
         }
     }
 
-    int currentKernel = 0;
-    clang::tooling::ClangTool tool(optionsParser.getCompilations(), optionsParser.getSourcePathList());
-    int status = parseCode(&tool);
-    /*
+    UserConfig userConfig(userConfigFileName.c_str());
     for (auto itKernel = kernels.begin(); itKernel != kernels.end(); itKernel++){
-        std::cout << "Processing kernel file " << *itKernel << " [" << currentKernel+1 << "/" << kernels.size() << "]" << std::endl;
-  
-        //TODO: implement kernel processing.
-        //TODO: Print how many mutants generated.
-        // e.g. 
-        // 10 mutants generated for kernel1
-        // 20 mutants generated for kernel2
-        ++currentKernel;
+        userConfig.generateFakeHeader(*itKernel);
     }
-*/
-    std::cout << "Executing " << executableFilePath << std::endl;
+    clang::tooling::ClangTool tool(optionsParser.getCompilations(), optionsParser.getSourcePathList());
+    int numOperators = parseCode(&tool, numKernels);
+    for (auto itKernel = kernels.begin(); itKernel != kernels.end(); itKernel++){
+        UserConfig::removeFakeHeader(*itKernel);
+    }
+    notification << numOperators << " mutable operators have been found.";
+    std::cout << ClmtUtils::colorString(notification.str(), output_color::KBLU) << "\n";
+    notification.clear();
+    notification << "Start executing with mutants";
+
+    for (auto itKernel = kernels.begin(); itKernel != kernels.end(); itKernel++){
+        
+    }
     //TODO: Iterate every mutant and compare result
     // e.g.
     // Executing with mutant 1
