@@ -212,8 +212,14 @@ void ClmtUtils::generateMutant(const std::string& kernelFilename, const int& num
     std::string code;
     codeStream << kernelFile.rdbuf();
     code = codeStream.str();
-    int i = numMutableOperators;
-    while (i--){
-        
+    std::list<unsigned int> templateLocationList;
+
+    for (int iCurrentMutableOperator = 1; iCurrentMutableOperator <= numMutableOperators; ++iCurrentMutableOperator){
+        std::string intermediateCode(code);
+        for (int i = 1; i <= numMutableOperators; ++i){
+            if (i != iCurrentMutableOperator){
+
+            }
+        }
     }
 }
