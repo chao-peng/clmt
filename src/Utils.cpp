@@ -1,8 +1,10 @@
 #include "Utils.h"
+#include "Constants.h"
 
 #include <iostream>
 #include <list>
 #include <set>
+#include <map>
 #include <string>
 #include <fstream>
 #include <algorithm>
@@ -113,42 +115,6 @@ int ClmtUtils::getNumLines(std::string fileName){
     int i = std::count(std::istreambuf_iterator<char>(inFile), std::istreambuf_iterator<char>(), '\n');
     inFile.close();
     return i;
-}
-
-bool ClmtUtils::isMutable(const std::string& operatorStr){
-    std::set<std::string> mutableOperators = {
-        "<",
-        "<=",
-        ">",
-        ">=",
-        "==",
-        "!=",
-        "+",
-        "-",
-        "*",
-        "/",
-        "%",
-        "&",
-        "|",
-        "^",
-        "++",
-        "--",
-        ">>",
-        "<<",
-        ">>>",
-        "+=",
-        "-=",
-        "*=",
-        "/=",
-        "%=",
-        "&=",
-        "|=",
-        "^=",
-        "<<=",
-        ">>=",
-        ">>>="
-    };
-    return mutableOperators.find(operatorStr) == mutableOperators.end()? false: true;
 }
 
 std::string ClmtUtils::getMutationOperator(const std::string& operatorStr){

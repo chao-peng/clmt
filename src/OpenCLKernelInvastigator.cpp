@@ -1,5 +1,6 @@
 #include <string>
 #include <map>
+#include <list>
 #include <iostream>
 #include <sstream>
 
@@ -26,6 +27,9 @@ using namespace clang::tooling;
 std::string codeTemplate;
 std::map<std::string, std::string> templateMap;
 
+std::map<std::string, unsigned int> operatorType;
+std::map<std::string, std::list<std::string>> mutantOperator;
+
 class RecursiveASTVisitorForKerlInvastigator : public RecursiveASTVisitor<RecursiveASTVisitorForKerlInvastigator>{
 public:
     explicit RecursiveASTVisitorForKerlInvastigator(Rewriter &r) : myRewriter(r) {}
@@ -49,6 +53,26 @@ public:
     }
 private:
     Rewriter &myRewriter;
+
+    unsigned int getOperatorType(const std::string& operatorStr){
+        if (operatorType.find(operatorStr) == operatorType.end()){
+            return 0;
+        } else {
+            return operatorType[operatorStr];
+        }
+    }
+
+    bool isMutable(const std::string& operatorStr){
+        if (getOperatorType(operatorStr) & operator_type::MUTABLE == operator_type::MUTABLE){
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    bool getMutantOperator(const std::string& operatorStr, std::stirng& newOperatorStr){
+        
+    }
 };
 
 class ASTConsumerForKernelInvastigator : public ASTConsumer{
@@ -100,6 +124,71 @@ public:
 private:
     Rewriter myRewriter;
 };
+
+void initialiseMaps(){
+    operatorType["+"] = operator_type::ARITHMETIC | operator_type::BINARY | operator_type::MUTABLE;
+    operatorType["-"] = operator_type::ARITHMETIC | operator_type::BINARY | operator_type::UNARY | operator_type::MUTABLE;
+    operatorType["*"] = operator_type::ARITHMETIC | operator_type::BINARY | operator_type::MUTABLE;
+    operatorType["/"] = operator_type::ARITHMETIC | operator_type::BINARY | operator_type::MUTABLE;
+    operatorType["%"] = operator_type::ARITHMETIC | operator_type::BINARY | operator_type::MUTABLE;
+    operatorType["++"] = operator_type::ARITHMETIC | operator_type::UNARY | operator_type::MUTABLE;
+    operatorType["--"] = operator_type::ARITHMETIC | operator_type::UNARY | operator_type::MUTABLE;
+    operatorType["=="] = operator_type::RELATIONAL | operator_type::BINARY | operator_type::MUTABLE;
+    operatorType["!="] = operator_type::RELATIONAL | operator_type::BINARY | operator_type::MUTABLE;
+    operatorType["<"] = operator_type::RELATIONAL | operator_type::BINARY | operator_type::MUTABLE;
+    operatorType["<="] = operator_type::RELATIONAL | operator_type::BINARY | operator_type::MUTABLE;
+    operatorType[">"] = operator_type::RELATIONAL | operator_type::BINARY | operator_type::MUTABLE;
+    operatorType[">="] = operator_type::RELATIONAL | operator_type::BINARY | operator_type::MUTABLE;
+    operatorType["&&"] = operator_type::LOGICAL | operator_type::BINARY | operator_type::MUTABLE;
+    operatorType["||"] = operator_type::LOGICAL | operator_type::BINARY | operator_type::MUTABLE;
+    operatorType["!"] = operator_type::LOGICAL | operator_type::UNARY;
+    operatorType["&"] = operator_type::BITWISE | operator_type::BINARY | operator_type::MUTABLE;
+    operatorType["|"] = operator_type::BITWISE | operator_type::BINARY | operator_type::MUTABLE;
+    operatorType["^"] = operator_type::BITWISE | operator_type::BINARY | operator_type::MUTABLE;
+    operatorType["~"] = operator_type::BITWISE | operator_type::UNARY;
+    operatorType["<<"] = operator_type::BITWISE | operator_type::BINARY | operator_type::MUTABLE;
+    operatorType[">>"] = operator_type::BITWISE | operator_type::BINARY | operator_type::MUTABLE;
+    operatorType["="] = operator_type::ASSIGNMENT | operator_type::BINARY;
+    operatorType["+="] = operator_type::ASSIGNMENT | operator_type::BINARY | operator_type::MUTABLE;
+    operatorType["-="] = operator_type::ASSIGNMENT | operator_type::BINARY | operator_type::MUTABLE;
+    operatorType["*="] = operator_type::ASSIGNMENT | operator_type::BINARY | operator_type::MUTABLE;
+    operatorType["/="] = operator_type::ASSIGNMENT | operator_type::BINARY | operator_type::MUTABLE;
+    operatorType["%="] = operator_type::ASSIGNMENT | operator_type::BINARY | operator_type::MUTABLE;
+    operatorType["<<="] = operator_type::ASSIGNMENT | operator_type::BINARY | operator_type::MUTABLE;
+    operatorType[">>="] = operator_type::ASSIGNMENT | operator_type::BINARY | operator_type::MUTABLE;
+    operatorType["&="] = operator_type::ASSIGNMENT | operator_type::BINARY | operator_type::MUTABLE;
+    operatorType["|="] = operator_type::ASSIGNMENT | operator_type::BINARY | operator_type::MUTABLE;
+    operatorType["^="] = operator_type::ASSIGNMENT | operator_type::BINARY | operator_type::MUTABLE;
+
+    mutantOperator["+"] = {"-"};
+    mutantOperator["-"] = {"+"};
+    mutantOperator["*"] = {"/"};
+    mutantOperator["/"] = {"*"};
+    mutantOperator["%"] = {"*"};
+    mutantOperator["<"] = {">", ">="};
+    mutantOperator[">"] = {"<", "<="};
+    mutantOperator["=="] = {"!="};
+    mutantOperator["<="] = {">=", ">"};
+    mutantOperator[">="] = {"<=", "<"};
+    mutantOperator["!="] = {"=="};
+    mutantOperator["&"] = {"|"};
+    mutantOperator["|"] = {"&"};
+    mutantOperator["^"] = {"&"};
+    mutantOperator["<<"] = {">>"};
+    mutantOperator["++"] = {"--"};
+    mutantOperator[""] = {""};
+    mutantOperator[""] = {""};
+    mutantOperator[""] = {""};
+    mutantOperator[""] = {""};
+    mutantOperator[""] = {""};
+    mutantOperator[""] = {""};
+    mutantOperator[""] = {""};
+    mutantOperator[""] = {""};
+    mutantOperator[""] = {""};
+    mutantOperator[""] = {""};
+    mutantOperator[""] = {""};
+
+}
 
 int parseCode(clang::tooling::ClangTool* tool){
     codeTemplate = "";

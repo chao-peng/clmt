@@ -22,4 +22,16 @@ namespace barrier_type{
     const unsigned int LOCAL_AND_GLOBAL = 0x03;
 }
 
+namespace operator_type{
+    const unsigned int UNARY = 0x0001;
+    const unsigned int BINARY = 0x0002;
+    const unsigned int ARITHMETIC = 0x0004;
+    const unsigned int RELATIONAL = 0x0008;
+    const unsigned int LOGICAL = 0x0010;
+    const unsigned int BITWISE = 0x0020;
+    const unsigned int ASSIGNMENT = 0x0040;
+    const unsigned int OTHER = 0x0080;
+    const unsigned int MUTABLE = 0x0100;
+}
+
 #endif
