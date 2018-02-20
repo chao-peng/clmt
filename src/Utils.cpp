@@ -267,3 +267,26 @@ std::list<std::string> ClmtUtils::generateMutant(const std::string& kernelFilena
     std::cout << colorString(notification.str(), output_color::KBLU) << "\n";
     return generatedMutants;
 }
+
+bool ClmtUtils::fileEquals(const std::string& file1, const std::string& file2, const std::list<int>& lines){
+    std::ifstream file1In(file1);
+    std::ifstream file2In(file2);
+    std::string line1;
+    std::string line2;
+    int currentLine = 1;
+    auto iter = lines.begin();
+    while(std::getline(file1In, line1) && std::getline(file2In, line2)){
+        std::cout << currentLine << std::endl;
+        std::cout << line1 << std::endl;
+        std::cout << line2 << std::endl;
+        if (currentLine == *iter){
+            if (line1.compare(line2) != 0) {
+                return false;
+            }
+            iter++;
+            if (iter == lines.end()) break;
+        }
+        currentLine++ ;
+    }
+    return true;
+}

@@ -38,16 +38,25 @@ std::string currentFile;
 std::map<int, std::string> mutableOperatorTemplates;
 std::map<std::string, std::list<std::string>> generatedMutantList;
 
+int counter;
+
 class RecursiveASTVisitorForKerlInvastigator : public RecursiveASTVisitor<RecursiveASTVisitorForKerlInvastigator>{
 public:
     explicit RecursiveASTVisitorForKerlInvastigator(Rewriter &r) : myRewriter(r) {}
     
+    bool VisitFunctionDecl(FunctionDecl *f) {
+        if (f->getQualifiedNameAsString().compare(kernel_rewriter_constants::CLCOV_GET_GENERAL_SIZE_FUNCTION_NAME)==0){
+            counter = 3;
+        }
+        return true;
+    }
+
     bool VisitStmt(Stmt *s){
         if (isa<BinaryOperator>(s)){
             BinaryOperator* binaryOperator = cast<BinaryOperator>(s);
-            if (notRewritable(myRewriter.getSourceMgr(), binaryOperator->getOperatorLoc())) return true;
             std::string operatorStr = binaryOperator->getOpcodeStr().str() + "B";
             if (isMutable(operatorStr)){
+                if (notRewritable(myRewriter.getSourceMgr(), binaryOperator->getOperatorLoc())) return true;
                 /*
                 SourceLocation startLoc = myRewriter.getSourceMgr().getFileLoc(
                     binaryOperator->getLocStart());
@@ -69,9 +78,9 @@ public:
             }
         } else if (isa<UnaryOperator>(s)){
             UnaryOperator* unaryOperator = cast<UnaryOperator>(s);
-            if (notRewritable(myRewriter.getSourceMgr(), unaryOperator->getOperatorLoc())) return true;
             std::string operatorStr = unaryOperator->getOpcodeStr(unaryOperator->getOpcode()).str() + "U";
             if (isMutable(operatorStr)){
+                if (notRewritable(myRewriter.getSourceMgr(), unaryOperator->getOperatorLoc())) return true;
                 /*
                 SourceLocation startLoc = myRewriter.getSourceMgr().getFileLoc(
                     unaryOperator->getLocStart());
@@ -123,6 +132,11 @@ private:
     }
 
     bool notRewritable(const SourceManager& sm, const SourceLocation& sl){
+        if (counter){
+            counter--;
+            return true;
+        }
+
         if (sm.isInExternCSystemHeader(sl)) return true;
         if (sm.isInSystemHeader(sl)) return true;
         if (sm.isMacroBodyExpansion(sl)) return true;
@@ -141,7 +155,7 @@ public:
             visitor.TraverseDecl(*b);
             //(*b)->dump();
         }
-    return true;
+        return true;
     }
 
 private:
@@ -173,7 +187,7 @@ public:
         outputFileStream.close();
         UserConfig::removeFakeHeader(filename);
         std::list<std::string> mutants = ClmtUtils::generateMutant(filename, mutableOperatorTemplates, currentFile);
-        generatedMutantList[filename] = mutants;
+        generatedMutantList[currentFile] = mutants;
         currentOperator = 1;
         currentKernel++;
         mutableOperatorTemplates.clear();
@@ -193,7 +207,7 @@ private:
     Rewriter myRewriter;
 };
 
-int parseCode(clang::tooling::ClangTool* tool, const int& numKernelsIn, std::map<std::string, std::list<std::string>>* mutantFileList){
+int parseCode(clang::tooling::ClangTool* tool, const int& numKernelsIn, std::map<std::string, std::list<std::string>>** mutantFileList){
     codeTemplate = "";
     templateMap.clear();
     ClmtUtils::initialiseOperatorTypeMap(operatorType);
@@ -202,7 +216,9 @@ int parseCode(clang::tooling::ClangTool* tool, const int& numKernelsIn, std::map
     numKernels = numKernelsIn;
     currentKernel = 1;
     numOperators=0;
+    counter = 0;
 
     tool->run(newFrontendActionFactory<ASTFrontendActionForKernelInvastigator>().get());
-    mutantFileList = &generatedMutantList;
+    *mutantFileList = &generatedMutantList;
+    return numOperators;
 }
