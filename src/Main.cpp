@@ -3,6 +3,7 @@
 #include <sstream>
 #include <fstream>
 #include <list>
+#include <map>
 
 #include "Utils.h"
 #include "Constants.h"
@@ -99,14 +100,16 @@ int main(int argc, const char** argv){
         userConfig.generateFakeHeader(*itKernel);
     }
     clang::tooling::ClangTool tool(optionsParser.getCompilations(), optionsParser.getSourcePathList());
-    int numOperators = parseCode(&tool, numKernels);
+    std::map<std::string, std::list<std::string>>* mutantFileList;
+    int numOperators = parseCode(&tool, numKernels, mutantFileList);
     for (auto itKernel = kernels.begin(); itKernel != kernels.end(); itKernel++){
         UserConfig::removeFakeHeader(*itKernel);
     }
-    notification << numOperators << " mutable operators have been found.";
+    notification << "Code invastigation summary: " << numOperators << " mutable operators have been found.";
     std::cout << ClmtUtils::colorString(notification.str(), output_color::KBLU) << "\n";
     notification.clear();
     notification << "Start executing with mutants";
+    std::cout << ClmtUtils::colorString(notification.str(), output_color::KBLU) << "\n";
 
     for (auto itKernel = kernels.begin(); itKernel != kernels.end(); itKernel++){
         

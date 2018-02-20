@@ -35,6 +35,8 @@ int numOperators;
 int currentKernel;
 int numKernels;
 std::string currentFile;
+std::map<int, std::string> mutableOperatorTemplates;
+std::map<std::string, std::list<std::string>> generatedMutantList;
 
 class RecursiveASTVisitorForKerlInvastigator : public RecursiveASTVisitor<RecursiveASTVisitorForKerlInvastigator>{
 public:
@@ -60,6 +62,7 @@ public:
 
                 std::stringstream operatorTemplate;
                 operatorTemplate << "${operator_" << currentOperator << "_" << operatorStr << "}";
+                mutableOperatorTemplates[currentOperator] = operatorTemplate.str();
                 myRewriter.ReplaceText(binaryOperator->getOperatorLoc(), operatorTemplate.str());
                 currentOperator++;
                 numOperators++;
@@ -68,7 +71,6 @@ public:
             UnaryOperator* unaryOperator = cast<UnaryOperator>(s);
             if (notRewritable(myRewriter.getSourceMgr(), unaryOperator->getOperatorLoc())) return true;
             std::string operatorStr = unaryOperator->getOpcodeStr(unaryOperator->getOpcode()).str() + "U";
-                        std::cout << "[operatorStr]" << operatorStr << std::endl;
             if (isMutable(operatorStr)){
                 /*
                 SourceLocation startLoc = myRewriter.getSourceMgr().getFileLoc(
@@ -84,6 +86,7 @@ public:
 
                 std::stringstream operatorTemplate;
                 operatorTemplate << "${operator_" << currentOperator << "_" << operatorStr << "}";
+                mutableOperatorTemplates[currentOperator] = operatorTemplate.str();
                 myRewriter.ReplaceText(unaryOperator->getOperatorLoc(), operatorTemplate.str());
                 currentOperator++;
                 numOperators++;
@@ -169,9 +172,11 @@ public:
         outputFileStream << source;
         outputFileStream.close();
         UserConfig::removeFakeHeader(filename);
-        ClmtUtils::generateMutant(filename, currentOperator - 1);
+        std::list<std::string> mutants = ClmtUtils::generateMutant(filename, mutableOperatorTemplates, currentFile);
+        generatedMutantList[filename] = mutants;
         currentOperator = 1;
         currentKernel++;
+        mutableOperatorTemplates.clear();
     }
 
     virtual std::unique_ptr<ASTConsumer> CreateASTConsumer(CompilerInstance &ci, 
@@ -188,7 +193,7 @@ private:
     Rewriter myRewriter;
 };
 
-int parseCode(clang::tooling::ClangTool* tool, const int& numKernelsIn){
+int parseCode(clang::tooling::ClangTool* tool, const int& numKernelsIn, std::map<std::string, std::list<std::string>>* mutantFileList){
     codeTemplate = "";
     templateMap.clear();
     ClmtUtils::initialiseOperatorTypeMap(operatorType);
@@ -199,5 +204,5 @@ int parseCode(clang::tooling::ClangTool* tool, const int& numKernelsIn){
     numOperators=0;
 
     tool->run(newFrontendActionFactory<ASTFrontendActionForKernelInvastigator>().get());
-    return numOperators;
+    mutantFileList = &generatedMutantList;
 }

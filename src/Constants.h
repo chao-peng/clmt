@@ -4,6 +4,7 @@
 namespace kernel_rewriter_constants{
     const char* const FAKE_HEADER_MACRO = "OPENCLBC_FAKE_HEADER_FOR_LIBTOOLING_";
     const char* const CODE_TEMPLATE_FILENAME_SUFFIX = "clmt_template";
+    const char* const MUTANT_FILENAME_SUFFIX = "clmt_mutant";
 }
 
 namespace error_code{

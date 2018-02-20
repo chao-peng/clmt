@@ -4,6 +4,6 @@
 #include "clang/Tooling/Tooling.h"
 #include "UserConfig.h"
 
-int parseCode(clang::tooling::ClangTool* tool, const int& numKernelsIn);
+int parseCode(clang::tooling::ClangTool* tool, const int& numKernelsIn, std::map<std::string, std::list<std::string>>* mutantFileList);
 
 #endif

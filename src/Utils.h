@@ -16,7 +16,9 @@ public:
     static void initialiseOperatorTypeMap(std::map<std::string, unsigned int>& operatorTypeMap);
     static void initialiseMutantOperatorMap(std::map<std::string, std::list<std::string>>& mutantOperatorMap);
     static std::string colorString(const std::string& str, const char* const color);
-    static void generateMutant(const std::string& kernelFilename, const int& numMutableOperators);
+    static void resolveTemplate(const std::string& templateStr, int &id, std::string& operatorStr);
+    static void replaceStringPattern(std::string& originalString, const std::string& pattern, const std::string& value);
+    static std::list<std::string> generateMutant(const std::string& kernelFilename, std::map<int, std::string>& mutableOperatorTemplates, const std::string& filePath);
 };
 
 #endif

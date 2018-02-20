@@ -163,20 +163,20 @@ void ClmtUtils::initialiseOperatorTypeMap(std::map<std::string, unsigned int>& o
 
 void ClmtUtils::initialiseMutantOperatorMap(std::map<std::string, std::list<std::string>>& mutantOperatorMap){
     //Arithmetic
-    mutantOperatorMap["+B"] = {"-"};
-    mutantOperatorMap["-B"] = {"+"};
+    mutantOperatorMap["+B"] = {"-", "*", "/"};
+    mutantOperatorMap["-B"] = {"+", "*", "/"};
     mutantOperatorMap["-U"] = {""};
-    mutantOperatorMap["*B"] = {"/"};
-    mutantOperatorMap["/B"] = {"*"};
-    mutantOperatorMap["%B"] = {"*"};
+    mutantOperatorMap["*B"] = {"/", "+", "-"};
+    mutantOperatorMap["/B"] = {"*", "+", "-"};
+    mutantOperatorMap["%B"] = {"*", "+", "*", "/"};
     mutantOperatorMap["++U"] = {"--"};
     mutantOperatorMap["--U"] = {"++"};
     //Relational
-    mutantOperatorMap["<B"] = {">", ">="};
-    mutantOperatorMap[">B"] = {"<", "<="};
+    mutantOperatorMap["<B"] = {">", ">=", "<="};
+    mutantOperatorMap[">B"] = {"<", "<=", ">="};
     mutantOperatorMap["==B"] = {"!="};
-    mutantOperatorMap["<=B"] = {">=", ">"};
-    mutantOperatorMap[">=B"] = {"<=", "<"};
+    mutantOperatorMap["<=B"] = {">=", ">", "<"};
+    mutantOperatorMap[">=B"] = {"<=", "<", ">"};
     mutantOperatorMap["!=B"] = {"=="};
     //Logical
     mutantOperatorMap["&&B"] = {"||"};
@@ -190,11 +190,11 @@ void ClmtUtils::initialiseMutantOperatorMap(std::map<std::string, std::list<std:
     mutantOperatorMap["<<"] = {">>"};
     mutantOperatorMap[">>"] = {"<<"};
     //Assignment
-    mutantOperatorMap["+=B"] = {"-="};
-    mutantOperatorMap["-=B"] = {"+="};
-    mutantOperatorMap["*=B"] = {"/="};
-    mutantOperatorMap["/=B"] = {"*="};
-    mutantOperatorMap["%=B"] = {"*="};
+    mutantOperatorMap["+=B"] = {"-=" ,"*=", "/="};
+    mutantOperatorMap["-=B"] = {"+=", "*=", "/="};
+    mutantOperatorMap["*=B"] = {"/=", "+=", "-="};
+    mutantOperatorMap["/=B"] = {"*=", "+=", "-="};
+    mutantOperatorMap["%=B"] = {"*=", "+=", "-=", "*=", "/="};
     mutantOperatorMap["<<=B"] = {">>="};
     mutantOperatorMap[">>=B"] = {"<<="};
     mutantOperatorMap["&=B"] = {"|="};
@@ -206,20 +206,64 @@ std::string ClmtUtils::colorString(const std::string& str, const char* const col
     return color + str + output_color::KNRM;
 }
 
-void ClmtUtils::generateMutant(const std::string& kernelFilename, const int& numMutableOperators){
+void ClmtUtils::resolveTemplate(const std::string& templateStr, int &id, std::string& operatorStr){
+    int p1 = templateStr.find_first_of("_");
+    int p2 = templateStr.find_last_of("_");
+    int p3 = templateStr.find_last_of("}");
+    std::string idStr = templateStr.substr(p1+1, p2-p1-1);
+    operatorStr = templateStr.substr(p2+1, p3-p2-1);
+    id = toInteger(idStr);
+}
+
+void ClmtUtils::replaceStringPattern(std::string& originalString, const std::string& pattern, const std::string& value){
+    auto locBegin = originalString.find(pattern);
+    originalString.replace(locBegin, pattern.length(), value);
+}
+
+std::list<std::string> ClmtUtils::generateMutant(const std::string& kernelFilename, std::map<int, std::string>& mutableOperatorTemplates, const std::string& filePath){
     std::ifstream kernelFile(kernelFilename);
     std::stringstream codeStream;
     std::string code;
     codeStream << kernelFile.rdbuf();
     code = codeStream.str();
-    std::list<unsigned int> templateLocationList;
-
-    for (int iCurrentMutableOperator = 1; iCurrentMutableOperator <= numMutableOperators; ++iCurrentMutableOperator){
-        std::string intermediateCode(code);
-        for (int i = 1; i <= numMutableOperators; ++i){
-            if (i != iCurrentMutableOperator){
-
+    std::map<std::string, std::list<std::string>> mutantOperatorMap;
+    initialiseMutantOperatorMap(mutantOperatorMap);
+    int mutantID = 1;
+    std::list<std::string> generatedMutants;
+    
+    for(auto it = mutableOperatorTemplates.begin(); it!=mutableOperatorTemplates.end(); it++){
+        std::string tmpCode(code);
+        std::string currentTemplate = it->second;
+        int currentID;
+        std::string currentOperatorStr;
+        resolveTemplate(currentTemplate, currentID, currentOperatorStr);
+        for (auto it2 = mutableOperatorTemplates.begin(); it2!=mutableOperatorTemplates.end(); it2++){
+            if (it2->first != currentID){
+                std::string template2 = it2->second;
+                std::string operator2Str;
+                int operator2ID;
+                resolveTemplate(template2, operator2ID, operator2Str);
+                operator2Str = operator2Str.substr(0, operator2Str.length()-1);
+                replaceStringPattern(tmpCode, template2, operator2Str);
             }
         }
+        std::list<std::string> mutantOperators = mutantOperatorMap[currentOperatorStr];
+        for (auto it3 = mutantOperators.begin(); it3!=mutantOperators.end(); it3++){
+            std::string codeToWrite(tmpCode);
+            replaceStringPattern(codeToWrite, currentTemplate, *it3);
+            std::stringstream fileNameBuilder;
+            fileNameBuilder << filePath << "." << kernel_rewriter_constants::MUTANT_FILENAME_SUFFIX << mutantID;
+            std::ofstream outputFile(fileNameBuilder.str());
+            generatedMutants.push_back(fileNameBuilder.str());
+            outputFile << codeToWrite;
+            outputFile.close();
+            mutantID++;
+        }
     }
+
+    mutantID--;
+    std::stringstream notification;
+    notification << mutantID << " mutants of this kernel has been created.";
+    std::cout << colorString(notification.str(), output_color::KBLU) << "\n";
+    return generatedMutants;
 }
