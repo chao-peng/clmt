@@ -276,9 +276,6 @@ bool ClmtUtils::fileEquals(const std::string& file1, const std::string& file2, c
     int currentLine = 1;
     auto iter = lines.begin();
     while(std::getline(file1In, line1) && std::getline(file2In, line2)){
-        std::cout << currentLine << std::endl;
-        std::cout << line1 << std::endl;
-        std::cout << line2 << std::endl;
         if (currentLine == *iter){
             if (line1.compare(line2) != 0) {
                 return false;
@@ -289,4 +286,21 @@ bool ClmtUtils::fileEquals(const std::string& file1, const std::string& file2, c
         currentLine++ ;
     }
     return true;
+}
+
+bool ClmtUtils::fileLastLineEquals(const std::string& file1, const std::string& file2){
+    std::ifstream file1In(file1);
+    std::ifstream file2In(file2);
+    std::string line1;
+    std::string line2;
+    while(std::getline(file1In,line1));
+    while(std::getline(file2In,line2));
+    return (line1.compare(line2)==0)? true: false;
+}
+
+void ClmtUtils::runCommand(const std::string& command, const std::string& error_msg){
+    if (system(command.c_str())){
+        std::cout << colorString(error_msg, output_color::KRED) << std::endl;
+        exit(error_code::COMMAND_EXEC_ERROR); 
+    }
 }

@@ -17,6 +17,8 @@ namespace error_code{
     const int NO_NEED_TO_TEST_COVERAGE = 5;
     const int KERNEL_FILE_NOT_PROVIDED = 6;
     const int LINES_TO_COMPARE_NOT_VALID = 7;
+    const int COMMAND_EXEC_ERROR = 8;
+    const int COMPARISON_FILE_NOT_PROVIDED = 9;
 }
 
 namespace barrier_type{
@@ -45,5 +47,10 @@ namespace output_color{
     const char* const KMAG = "\x1B[35m";
     const char* const KCYN = "\x1B[36m";
     const char* const KWHT = "\x1B[37m";
+}
+
+namespace mutant_type{
+    const unsigned int killed = 0x01;
+    const unsigned int survived = 0x02;
 }
 #endif

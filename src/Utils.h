@@ -20,6 +20,8 @@ public:
     static void replaceStringPattern(std::string& originalString, const std::string& pattern, const std::string& value);
     static std::list<std::string> generateMutant(const std::string& kernelFilename, std::map<int, std::string>& mutableOperatorTemplates, const std::string& filePath);
     static bool fileEquals(const std::string& file1, const std::string& file2, const std::list<int>& lines);
+    static bool fileLastLineEquals(const std::string& file1, const std::string& file2);
+    static void runCommand(const std::string& command, const std::string& error_msg);
 };
 
 #endif
