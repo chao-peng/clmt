@@ -39,6 +39,7 @@ std::map<int, std::string> mutableOperatorTemplates;
 std::map<std::string, std::list<std::string>> generatedMutantList;
 
 int counter;
+ASTContext* context;
 
 class RecursiveASTVisitorForKerlInvastigator : public RecursiveASTVisitor<RecursiveASTVisitorForKerlInvastigator>{
 public:
@@ -52,6 +53,23 @@ public:
     }
 
     bool VisitStmt(Stmt *s){
+        if (isa<BinaryOperator>(s) || isa<UnaryOperator>(s)){
+            const Stmt* currentStmt = s;
+            auto parents = context->getParents(*currentStmt);
+            while(!parents.empty()){
+                if (!parents[0].get<Stmt>()) break;
+                if (isa<CallExpr>(parents[0].get<Stmt>())){
+                    const CallExpr* functionCall = cast<CallExpr>(parents[0].get<Stmt>());
+                    std::string functionName = myRewriter.getRewrittenText(functionCall->getCallee()->getSourceRange());
+                    if (functionName == "barrier"){
+                        return true;
+                    }
+                }
+                currentStmt = parents[0].get<Stmt>();
+                parents = context->getParents(*currentStmt);
+            }
+        }
+
         if (isa<BinaryOperator>(s)){
             BinaryOperator* binaryOperator = cast<BinaryOperator>(s);
             std::string operatorStr = binaryOperator->getOpcodeStr().str() + "B";
@@ -200,6 +218,7 @@ public:
             currentFile = file.str();
             std::cout << ClmtUtils::colorString(notification.str(), output_color::KBLU) << "\n";
             myRewriter.setSourceMgr(ci.getSourceManager(), ci.getLangOpts());
+            context = &ci.getASTContext();
             return llvm::make_unique<ASTConsumerForKernelInvastigator>(myRewriter);
         }
 
