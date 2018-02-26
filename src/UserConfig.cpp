@@ -25,7 +25,7 @@ int UserConfig::generateFakeHeader(std::string kernelFileName){
 
     if (!setMacro.empty()){
         for (auto it = setMacro.begin(); it != setMacro.end(); it++) {
-            header << "#define " << *it << "\n";
+            header << "#define " << *it << " 1 \n";
             numAddedLines++;
         }
     }

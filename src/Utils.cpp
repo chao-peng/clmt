@@ -217,6 +217,9 @@ void ClmtUtils::resolveTemplate(const std::string& templateStr, int &id, std::st
 
 void ClmtUtils::replaceStringPattern(std::string& originalString, const std::string& pattern, const std::string& value){
     auto locBegin = originalString.find(pattern);
+    if (locBegin > originalString.length()){
+        std::cout << "[debug] template:" << pattern << "\n";
+    }
     originalString.replace(locBegin, pattern.length(), value);
 }
 

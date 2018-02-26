@@ -46,7 +46,8 @@ public:
     explicit RecursiveASTVisitorForKerlInvastigator(Rewriter &r) : myRewriter(r) {}
     
     bool VisitFunctionDecl(FunctionDecl *f) {
-        if (f->getQualifiedNameAsString().compare(kernel_rewriter_constants::CLCOV_GET_GENERAL_SIZE_FUNCTION_NAME)==0){
+        std::string functionName = f->getQualifiedNameAsString();
+        if (!functionName.empty() && functionName.compare(kernel_rewriter_constants::CLCOV_GET_GENERAL_SIZE_FUNCTION_NAME)==0){
             counter = 3;
         }
         return true;
@@ -54,6 +55,20 @@ public:
 
     bool VisitStmt(Stmt *s){
         if (isa<BinaryOperator>(s) || isa<UnaryOperator>(s)){
+            SourceLocation rewrittenCodeStart= myRewriter.getSourceMgr().getFileLoc(s->getLocStart());
+            SourceLocation rewrittenCodeEnd = myRewriter.getSourceMgr().getFileLoc(s->getLocEnd());
+            SourceRange rewrittenCodeRange;
+            rewrittenCodeRange.setBegin(rewrittenCodeStart);
+            rewrittenCodeRange.setEnd(rewrittenCodeEnd);
+                    std::cout << s->getLocStart().printToString(myRewriter.getSourceMgr()) << std::endl;
+                                        std::cout << s->getLocEnd().printToString(myRewriter.getSourceMgr()) << std::endl;
+
+            std::string rewrittenCode = myRewriter.getRewrittenText(rewrittenCodeRange);
+
+            if (rewrittenCode.find("${operator")!=std::string::npos){
+                return true;
+            }
+
             const Stmt* currentStmt = s;
             auto parents = context->getParents(*currentStmt);
             while(!parents.empty()){
@@ -69,7 +84,6 @@ public:
                 parents = context->getParents(*currentStmt);
             }
         }
-
         if (isa<BinaryOperator>(s)){
             BinaryOperator* binaryOperator = cast<BinaryOperator>(s);
             std::string operatorStr = binaryOperator->getOpcodeStr().str() + "B";
