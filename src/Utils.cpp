@@ -168,7 +168,7 @@ void ClmtUtils::initialiseMutantOperatorMap(std::map<std::string, std::list<std:
     mutantOperatorMap["-U"] = {""};
     mutantOperatorMap["*B"] = {"/", "+", "-"};
     mutantOperatorMap["/B"] = {"*", "+", "-"};
-    mutantOperatorMap["%B"] = {"*", "+", "*", "/"};
+    mutantOperatorMap["%B"] = {"*", "+", "-", "/"};
     mutantOperatorMap["++U"] = {"--"};
     mutantOperatorMap["--U"] = {"++"};
     //Relational
@@ -187,14 +187,14 @@ void ClmtUtils::initialiseMutantOperatorMap(std::map<std::string, std::list<std:
     mutantOperatorMap["|B"] = {"&"};
     mutantOperatorMap["^B"] = {"&"};
     mutantOperatorMap["~U"] = {""};
-    mutantOperatorMap["<<"] = {">>"};
-    mutantOperatorMap[">>"] = {"<<"};
+    mutantOperatorMap["<<B"] = {">>"};
+    mutantOperatorMap[">>B"] = {"<<"};
     //Assignment
     mutantOperatorMap["+=B"] = {"-=" ,"*=", "/="};
     mutantOperatorMap["-=B"] = {"+=", "*=", "/="};
     mutantOperatorMap["*=B"] = {"/=", "+=", "-="};
     mutantOperatorMap["/=B"] = {"*=", "+=", "-="};
-    mutantOperatorMap["%=B"] = {"*=", "+=", "-=", "*=", "/="};
+    mutantOperatorMap["%=B"] = {"*=", "+=", "-=", "/="};
     mutantOperatorMap["<<=B"] = {">>="};
     mutantOperatorMap[">>=B"] = {"<<="};
     mutantOperatorMap["&=B"] = {"|="};
