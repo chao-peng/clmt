@@ -231,9 +231,18 @@ std::list<std::string> ClmtUtils::generateMutant(const std::string& kernelFilena
     code = codeStream.str();
     std::map<std::string, std::list<std::string>> mutantOperatorMap;
     initialiseMutantOperatorMap(mutantOperatorMap);
+    std::map<std::string, unsigned int> operatorType;
+    initialiseOperatorTypeMap(operatorType);
     int mutantID = 1;
     std::list<std::string> generatedMutants;
     
+    int arithemeticOperatorCount = 0;
+    int relationalOperatorCount = 0;
+    int logicalOperatorCount = 0;
+    int bitwiseOperatorCount = 0;
+    int assignmentOperatorCount = 0;
+    int otherOperatorCount = 0;
+
     for(auto it = mutableOperatorTemplates.begin(); it!=mutableOperatorTemplates.end(); it++){
         std::string tmpCode(code);
         std::string currentTemplate = it->second;
@@ -251,6 +260,31 @@ std::list<std::string> ClmtUtils::generateMutant(const std::string& kernelFilena
             }
         }
         std::list<std::string> mutantOperators = mutantOperatorMap[currentOperatorStr];
+
+        auto type = operatorType[currentOperatorStr];
+        int lenMutantOperators = mutantOperators.size();
+        switch (type) {
+            case operator_type::ARITHMETIC:
+                arithemeticOperatorCount += lenMutantOperators;
+                break;
+            case operator_type::RELATIONAL:
+                relationalOperatorCount += lenMutantOperators;
+                break;
+            case operator_type::LOGICAL:
+                logicalOperatorCount += lenMutantOperators;
+                break;
+            case operator_type::ASSIGNMENT:
+                assignmentOperatorCount += lenMutantOperators;
+                break;
+            case operator_type::BITWISE:
+                bitwiseOperatorCount += lenMutantOperators;
+                break;
+            case operator_type::OTHER:
+                otherOperatorCount += lenMutantOperators;
+                break;
+        }
+    
+
         for (auto it3 = mutantOperators.begin(); it3!=mutantOperators.end(); it3++){
             std::string codeToWrite(tmpCode);
             replaceStringPattern(codeToWrite, currentTemplate, *it3);
@@ -267,6 +301,17 @@ std::list<std::string> ClmtUtils::generateMutant(const std::string& kernelFilena
     mutantID--;
     std::stringstream notification;
     notification << mutantID << " mutants of this kernel has been created.";
+
+
+    std::cout << "Operator Summary\n"
+        << "Arithmetic: " << arithemeticOperatorCount << "\n"
+        << "Relational:" << relationalOperatorCount << "\n"
+        << "Logical: " << logicalOperatorCount << "\n"
+        << "Bitwise: " << bitwiseOperatorCount << "\n"
+        << "Assignment: " << assignmentOperatorCount << "\n"
+        << "Other: " << otherOperatorCount << "\n"
+        << "End of Operator Summary\n";
+
     std::cout << colorString(notification.str(), output_color::KBLU) << "\n";
     return generatedMutants;
 }

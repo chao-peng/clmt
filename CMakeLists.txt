@@ -12,7 +12,7 @@ add_clang_executable(clmt
     src/UserConfig.h
     src/Main.cpp)
         
-target_link_libraries(clmt
+target_link_libraries(clmt PRIVATE
     clangAST
     clangASTMatchers
     clangBasic
