@@ -55,13 +55,13 @@ public:
 
     bool VisitStmt(Stmt *s){
         if (isa<BinaryOperator>(s) || isa<UnaryOperator>(s)){
-            SourceLocation rewrittenCodeStart= myRewriter.getSourceMgr().getFileLoc(s->getLocStart());
-            SourceLocation rewrittenCodeEnd = myRewriter.getSourceMgr().getFileLoc(s->getLocEnd());
+            SourceLocation rewrittenCodeStart= myRewriter.getSourceMgr().getFileLoc(s->getBeginLoc());
+            SourceLocation rewrittenCodeEnd = myRewriter.getSourceMgr().getFileLoc(s->getEndLoc());
             SourceRange rewrittenCodeRange;
             rewrittenCodeRange.setBegin(rewrittenCodeStart);
             rewrittenCodeRange.setEnd(rewrittenCodeEnd);
-                    std::cout << s->getLocStart().printToString(myRewriter.getSourceMgr()) << std::endl;
-                                        std::cout << s->getLocEnd().printToString(myRewriter.getSourceMgr()) << std::endl;
+                    std::cout << s->getBeginLoc().printToString(myRewriter.getSourceMgr()) << std::endl;
+                                        std::cout << s->getEndLoc().printToString(myRewriter.getSourceMgr()) << std::endl;
 
             std::string rewrittenCode = myRewriter.getRewrittenText(rewrittenCodeRange);
 
